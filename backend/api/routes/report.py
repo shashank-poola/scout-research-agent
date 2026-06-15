@@ -1,3 +1,4 @@
+from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlmodel import Session
@@ -40,14 +41,28 @@ async def get_report_json(session_id: int, db: Session = Depends(get_session)):
 
 
 @router.get("/{session_id}/report/pdf")
-async def download_pdf(session_id: int, db: Session = Depends(get_session)):
+async def download_report(session_id: int, db: Session = Depends(get_session)):
     session = db.get(ResearchSession, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     if session.status != "done" or not session.report_path:
-        raise HTTPException(status_code=404, detail="PDF not ready")
+        raise HTTPException(status_code=404, detail="Report not ready")
+
+    path = Path(session.report_path)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Report file missing")
+
+    # HTML report — renders natively in browser iframe, no native libs needed
+    if path.suffix == ".html":
+        return FileResponse(
+            path=str(path),
+            media_type="text/html",
+            headers={"Content-Disposition": "inline"},
+        )
+
+    # PDF fallback (if WeasyPrint was used)
     return FileResponse(
-        path=session.report_path,
+        path=str(path),
         media_type="application/pdf",
         filename=f"scout_{session.company_name.lower().replace(' ', '_')}.pdf",
     )

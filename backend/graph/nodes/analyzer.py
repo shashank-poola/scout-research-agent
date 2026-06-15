@@ -8,8 +8,9 @@ from graph.state import ResearchState
 
 logger = logging.getLogger(__name__)
 
-_MAX_SOURCES = 20
-_MAX_CHARS_PER_SOURCE = 1500
+_MAX_SOURCES = 10
+_MAX_CHARS_PER_SOURCE = 600
+_MAX_HIGHLIGHT_CHARS = 180
 
 
 def _format_research_data(results: list[dict]) -> str:
@@ -18,7 +19,9 @@ def _format_research_data(results: list[dict]) -> str:
     for i, r in enumerate(results[:_MAX_SOURCES], 1):
         text = (r.get("text") or "").strip()[:_MAX_CHARS_PER_SOURCE]
         highlights = r.get("highlights") or []
-        highlight_text = " | ".join(h for h in highlights[:3] if h)
+        highlight_text = " | ".join(
+            h[:_MAX_HIGHLIGHT_CHARS] for h in highlights[:2] if h
+        )
 
         section = f"[{i}] {r.get('title', 'Untitled')}\nURL: {r.get('url', '')}"
         if highlight_text:
