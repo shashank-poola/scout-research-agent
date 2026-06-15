@@ -97,6 +97,19 @@
   font-size: var(--font-size-sm);
   letter-spacing: 0;
   font-family: var(--font-body);
+  flex: 1;
+}
+
+.shortcutKey {
+  font-size: 10px;
+  padding: 2px 5px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 4px;
+  color: var(--text-tertiary);
+  font-family: var(--font-body);
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 /* Section */
@@ -121,25 +134,87 @@
   color: var(--text-tertiary);
 }
 
-.sectionLinks {
+/* Filter row */
+.filterRow {
+  display: flex;
+  gap: 2px;
+  padding: 2px 9px 6px;
+}
+
+.filterBtn {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  padding: 3px 7px;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.13s, color 0.13s;
+  font-family: var(--font-body);
+}
+.filterBtn:hover {
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.03);
+}
+.filterBtnActive {
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.06);
+  font-weight: 500;
+}
+
+/* Session list */
+.sessionList {
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
 
-.sectionLink {
-  display: block;
+.sessionItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
-  text-align: left;
-  padding: 6px 9px;
+  padding: 5px 9px;
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
   border-radius: var(--radius-md);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
   transition: background 0.13s, color 0.13s;
 }
-.sectionLink:hover {
-  background: rgba(0,0,0,0.04);
+.sessionItem:hover {
+  background: rgba(0, 0, 0, 0.04);
   color: var(--text-primary);
+}
+
+.sessionDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  flex-shrink: 0;
+}
+.sessionDotDone {
+  background: #16a34a;
+}
+.sessionDotRunning {
+  background: #ca8a04;
+}
+
+.sessionName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-body);
+}
+
+.emptyNote {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  padding: 4px 9px 8px;
 }
 
 /* Bottom area */

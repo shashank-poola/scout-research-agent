@@ -41,7 +41,7 @@ async def get_report_json(session_id: int, db: Session = Depends(get_session)):
 
 
 @router.get("/{session_id}/report/pdf")
-async def download_report(session_id: int, db: Session = Depends(get_session)):
+async def download_report(session_id: int, download: bool = False, db: Session = Depends(get_session)):
     session = db.get(ResearchSession, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -52,17 +52,19 @@ async def download_report(session_id: int, db: Session = Depends(get_session)):
     if not path.exists():
         raise HTTPException(status_code=404, detail="Report file missing")
 
-    # HTML report — renders natively in browser iframe, no native libs needed
+    slug = session.company_name.lower().replace(" ", "_")
+
     if path.suffix == ".html":
+        disposition = f'attachment; filename="scout_{slug}.html"' if download else "inline"
         return FileResponse(
             path=str(path),
             media_type="text/html",
-            headers={"Content-Disposition": "inline"},
+            headers={"Content-Disposition": disposition},
         )
 
-    # PDF fallback (if WeasyPrint was used)
+    # PDF fallback
     return FileResponse(
         path=str(path),
         media_type="application/pdf",
-        filename=f"scout_{session.company_name.lower().replace(' ', '_')}.pdf",
+        filename=f"scout_{slug}.pdf",
     )

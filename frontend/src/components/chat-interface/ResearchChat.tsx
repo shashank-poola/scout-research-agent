@@ -7,7 +7,7 @@ import {
   CheckmarkCircle01Icon,
   Pdf01Icon,
 } from '@hugeicons/core-free-icons';
-import { createSession, runWorkflow, streamProgress, sendChat, getChatHistory, getPdfUrl } from '../../routes';
+import { createSession, runWorkflow, streamProgress, sendChat, getChatHistory, getPdfUrl, getDownloadUrl } from '../../routes';
 import type { Session, ProgressEvent } from '../../lib/types';
 import logoScout from '../../assets/logoscout.png';
 import styles from './ResearchChat.module.css';
@@ -182,6 +182,7 @@ export default function ResearchChat({
   };
 
   const pdfUrl = session ? getPdfUrl(session.id) : null;
+  const downloadUrl = session ? getDownloadUrl(session.id) : null;
   const displayName = session?.company_name ?? initialQuery;
 
   return (
@@ -196,10 +197,10 @@ export default function ResearchChat({
                 {phase === 'research' ? 'Researching…' : 'AI Research Assistant'}
               </span>
             </div>
-            {pdfUrl && (
-              <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className={styles.pdfBtn}>
+            {downloadUrl && (
+              <a href={downloadUrl} className={styles.pdfBtn}>
                 <HugeiconsIcon icon={Download01Icon} size={13} color="currentColor" strokeWidth={1.8} />
-                PDF
+                Download
               </a>
             )}
           </div>
@@ -257,7 +258,7 @@ export default function ResearchChat({
             <HugeiconsIcon icon={Pdf01Icon} size={15} color="currentColor" strokeWidth={1.8} />
             <span>{displayName} — Research Report</span>
             <div className={styles.pdfHeaderActions}>
-              <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className={styles.pdfOpenBtn}>
+              <a href={downloadUrl ?? '#'} className={styles.pdfOpenBtn}>
                 <HugeiconsIcon icon={Download01Icon} size={13} color="currentColor" strokeWidth={1.8} />
                 Download
               </a>

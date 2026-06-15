@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HugeiconsIcon, type HugeiconsIconProps } from '@hugeicons/react';
 
 type HIcon = HugeiconsIconProps['icon'];
@@ -13,6 +13,8 @@ import {
 } from '@hugeicons/core-free-icons';
 import logoScout from '../../assets/logoscout.png';
 import ProfileMenu from '../profile/ProfileMenu';
+import { listSessions } from '../../routes/sessions';
+import type { Session } from '../../lib/types';
 import styles from './Sidebar.module.css';
 
 interface NavItemProps {
@@ -20,9 +22,10 @@ interface NavItemProps {
   label: string;
   onClick?: () => void;
   active?: boolean;
+  shortcut?: string;
 }
 
-function NavItem({ icon, label, onClick, active }: NavItemProps) {
+function NavItem({ icon, label, onClick, active, shortcut }: NavItemProps) {
   return (
     <button
       className={`${styles.navItem} ${active ? styles.navItemActive : ''}`}
@@ -32,9 +35,12 @@ function NavItem({ icon, label, onClick, active }: NavItemProps) {
         <HugeiconsIcon icon={icon} size={16} color="currentColor" strokeWidth={1.8} />
       </span>
       <span className={styles.navLabel}>{label}</span>
+      {shortcut && <kbd className={styles.shortcutKey}>{shortcut}</kbd>}
     </button>
   );
 }
+
+type ResearchFilter = 'recent' | 'completed';
 
 interface SidebarProps {
   activeView: string;
@@ -42,6 +48,9 @@ interface SidebarProps {
   onCollapse: (v: boolean) => void;
   onNavigate: (view: string) => void;
   onNewResearch: () => void;
+  onOpenSession: (session: Session) => void;
+  onSearchOpen: () => void;
+  sessions: Session[];
 }
 
 export default function Sidebar({
@@ -50,8 +59,21 @@ export default function Sidebar({
   onCollapse,
   onNavigate,
   onNewResearch,
+  onOpenSession,
+  onSearchOpen,
+  sessions,
 }: SidebarProps) {
   const [showProfile, setShowProfile] = useState(false);
+  const [researchFilter, setResearchFilter] = useState<ResearchFilter>('recent');
+
+  const sorted = sessions.slice().sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
+
+  const displayedSessions =
+    researchFilter === 'completed'
+      ? sorted.filter((s) => s.status === 'done').slice(0, 6)
+      : sorted.slice(0, 6);
 
   if (collapsed) {
     return (
@@ -86,24 +108,28 @@ export default function Sidebar({
             icon={Add01Icon}
             label="New Research"
             onClick={onNewResearch}
+            shortcut="N"
           />
           <NavItem
             icon={Search01Icon}
             label="Search"
-            onClick={() => onNavigate('search')}
+            onClick={onSearchOpen}
             active={activeView === 'search'}
+            shortcut="⌘K"
           />
           <NavItem
             icon={BookOpen01Icon}
             label="Reports"
             onClick={() => onNavigate('home')}
             active={activeView === 'home'}
+            shortcut="R"
           />
           <NavItem
             icon={Clock01Icon}
             label="History"
             onClick={() => onNavigate('history')}
             active={activeView === 'history'}
+            shortcut="H"
           />
         </nav>
 
@@ -111,10 +137,46 @@ export default function Sidebar({
           <div className={styles.sectionHeader}>
             <span className={styles.sectionTitle}>Research</span>
           </div>
-          <div className={styles.sectionLinks}>
-            <button className={styles.sectionLink}>Recent</button>
-            <button className={styles.sectionLink}>Starred</button>
-            <button className={styles.sectionLink}>Completed</button>
+
+          <div className={styles.filterRow}>
+            <button
+              className={`${styles.filterBtn} ${researchFilter === 'recent' ? styles.filterBtnActive : ''}`}
+              onClick={() => setResearchFilter('recent')}
+            >
+              Recent
+            </button>
+            <button
+              className={`${styles.filterBtn} ${researchFilter === 'completed' ? styles.filterBtnActive : ''}`}
+              onClick={() => setResearchFilter('completed')}
+            >
+              Completed
+            </button>
+          </div>
+
+          <div className={styles.sessionList}>
+            {displayedSessions.length === 0 ? (
+              <p className={styles.emptyNote}>No research yet</p>
+            ) : (
+              displayedSessions.map((s) => (
+                <button
+                  key={s.id}
+                  className={styles.sessionItem}
+                  onClick={() => onOpenSession(s)}
+                  title={s.company_name}
+                >
+                  <span
+                    className={`${styles.sessionDot} ${
+                      s.status === 'done'
+                        ? styles.sessionDotDone
+                        : s.status === 'running'
+                        ? styles.sessionDotRunning
+                        : ''
+                    }`}
+                  />
+                  <span className={styles.sessionName}>{s.company_name}</span>
+                </button>
+              ))
+            )}
           </div>
         </div>
       </div>
