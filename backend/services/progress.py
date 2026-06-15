@@ -1,28 +1,31 @@
-import asyncio
+"""
+In-memory progress tracking for workflow sessions.
+
+Uses an append-only events list + index-based streaming so any number of
+SSE consumers can connect at any time without duplicates or missed events.
+"""
+
 from typing import Optional
 
-# per-session: {queue, events list, done flag}
+# session_id → {"events": [...], "done": bool}
 _sessions: dict[int, dict] = {}
 
 
 def init(session_id: int) -> None:
-    _sessions[session_id] = {"queue": asyncio.Queue(), "events": [], "done": False}
+    _sessions[session_id] = {"events": [], "done": False}
 
 
-async def emit(session_id: int, event: dict) -> None:
+def emit(session_id: int, event: dict) -> None:
     s = _sessions.get(session_id)
     if s:
         s["events"].append(event)
-        await s["queue"].put(event)
 
 
-async def finish(session_id: int, event: dict) -> None:
+def finish(session_id: int, event: dict) -> None:
     s = _sessions.get(session_id)
     if s:
-        done_event = {**event, "done": True}
-        s["events"].append(done_event)
+        s["events"].append({**event, "done": True})
         s["done"] = True
-        await s["queue"].put(done_event)
 
 
 def get(session_id: int) -> Optional[dict]:

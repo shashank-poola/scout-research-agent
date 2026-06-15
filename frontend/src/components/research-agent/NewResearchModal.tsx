@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import styles from './NewResearchModal.module.css';
-import type { CreateSessionPayload } from '../lib/types';
+import type { CreateSessionPayload } from '../../lib/types';
 
 interface NewResearchModalProps {
   initialQuery?: string;
@@ -19,7 +19,6 @@ export default function NewResearchModal({ initialQuery = '', onSubmit, onClose 
     firstRef.current?.focus();
   }, []);
 
-  // close on backdrop click
   const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) onClose();
   };

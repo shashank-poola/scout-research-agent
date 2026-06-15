@@ -11,8 +11,8 @@ import {
   SidebarLeft01Icon,
   ArrowRight01Icon,
 } from '@hugeicons/core-free-icons';
-import logoScout from '../assets/logoscout.png';
-import ProfileMenu from './ProfileMenu';
+import logoScout from '../../assets/logoscout.png';
+import ProfileMenu from '../profile/ProfileMenu';
 import styles from './Sidebar.module.css';
 
 interface NavItemProps {
@@ -70,7 +70,6 @@ export default function Sidebar({
   return (
     <aside className={styles.sidebar}>
       <div className={styles.top}>
-        {/* Logo row */}
         <div className={styles.logoRow}>
           <img src={logoScout} alt="Scout AI" className={styles.logo} />
           <button
@@ -82,7 +81,6 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* Primary nav */}
         <nav className={styles.nav}>
           <NavItem
             icon={Add01Icon}
@@ -109,7 +107,6 @@ export default function Sidebar({
           />
         </nav>
 
-        {/* Research section */}
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <span className={styles.sectionTitle}>Research</span>
@@ -122,7 +119,6 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* User row with profile popup */}
       <div className={styles.bottomArea}>
         {showProfile && <ProfileMenu onClose={() => setShowProfile(false)} />}
         <button

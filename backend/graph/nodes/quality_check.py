@@ -1,23 +1,62 @@
-from langchain_core.prompts import ChatPromptTemplate
-from services.llm import get_llm
-from graph.state import ResearchState
-import json
+"""Quality check node — scores the analysis and decides whether to retry research."""
 
-_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a research quality evaluator. Score the analysis on completeness, accuracy, and depth. Return JSON with keys: score (0.0-1.0) and feedback (string)."),
-    ("human", "Objective: {research_objective}\n\nAnalysis:\n{analysis}"),
-])
+import json
+import re
+import logging
+from langchain_core.messages import SystemMessage, HumanMessage
+from services.llm import get_llm
+from services.prompts import QUALITY_SYSTEM, QUALITY_HUMAN
+from graph.state import ResearchState
+
+logger = logging.getLogger(__name__)
+
+
+def _extract_json(text: str) -> dict:
+    """Robustly extract a JSON object from LLM output (handles markdown fences)."""
+    # Direct parse
+    try:
+        return json.loads(text.strip())
+    except json.JSONDecodeError:
+        pass
+
+    # Strip markdown code fences
+    match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
+    if match:
+        try:
+            return json.loads(match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    # Extract first {...} block
+    match = re.search(r"\{[\s\S]*?\}", text)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            pass
+
+    return {}
 
 
 async def quality_check_node(state: ResearchState) -> dict:
     llm = get_llm()
-    chain = _prompt | llm
-    response = await chain.ainvoke({
-        "research_objective": state["research_objective"],
-        "analysis": state.get("analysis", ""),
-    })
-    try:
-        data = json.loads(response.content)
-        return {"quality_score": float(data["score"]), "quality_feedback": data["feedback"]}
-    except Exception:
-        return {"quality_score": 0.75, "quality_feedback": "Auto-approved"}
+    messages = [
+        SystemMessage(content=QUALITY_SYSTEM),
+        HumanMessage(content=QUALITY_HUMAN.format(
+            research_objective=state["research_objective"],
+            analysis=state.get("analysis", ""),
+        )),
+    ]
+    response = await llm.ainvoke(messages)
+    data = _extract_json(response.content)
+
+    score = float(data.get("score", 0.75))
+    feedback = data.get("feedback", "Auto-approved")
+
+    logger.info(
+        "Quality check score=%.2f for '%s': %s",
+        score,
+        state["company_name"],
+        feedback,
+    )
+    return {"quality_score": score, "quality_feedback": feedback}

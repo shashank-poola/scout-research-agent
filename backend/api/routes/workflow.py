@@ -1,5 +1,8 @@
+"""Workflow execution and SSE progress streaming."""
+
 import json
 import asyncio
+import logging
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
@@ -9,7 +12,11 @@ from models.session import ResearchSession
 from graph.workflow import workflow
 import services.progress as progress
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/sessions", tags=["workflow"])
+
+_SSE_PING_INTERVAL = 25.0   # seconds between keepalive pings
+_SSE_POLL_INTERVAL = 0.25   # seconds between event-list polls
 
 
 @router.post("/{session_id}/run")
@@ -36,36 +43,56 @@ async def run_workflow(
 
 @router.get("/{session_id}/stream")
 async def stream_progress(session_id: int):
+    """
+    SSE endpoint for live workflow progress.
+
+    Uses an index into the append-only events list so:
+    - Late-connecting clients automatically replay all past events
+    - No queue duplication bugs
+    - Multiple simultaneous consumers work correctly
+    """
     async def event_generator():
         state = progress.get(session_id)
         if state is None:
-            yield f"data: {json.dumps({'error': 'No active workflow for this session'})}\n\n"
+            yield _sse({"error": "No active workflow for this session"})
             return
 
-        # replay events already emitted (handles late connections)
-        for event in state["events"]:
-            yield f"data: {json.dumps(event)}\n\n"
+        idx = 0
+        last_ping = asyncio.get_event_loop().time()
 
-        if state["done"]:
-            return
-
-        q: asyncio.Queue = state["queue"]
-        # skip already-replayed events
-        skip = len(state["events"])
-        count = 0
         while True:
-            try:
-                event = await asyncio.wait_for(q.get(), timeout=60.0)
-                count += 1
-                if count <= skip:
-                    continue
-                yield f"data: {json.dumps(event)}\n\n"
-                if event.get("done"):
-                    break
-            except asyncio.TimeoutError:
-                yield f"data: {json.dumps({'ping': True})}\n\n"
+            # Drain any new events
+            events = state["events"]
+            while idx < len(events):
+                yield _sse(events[idx])
+                if events[idx].get("done"):
+                    return
+                idx += 1
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+            # If workflow finished and we've sent everything, close
+            if state["done"] and idx >= len(events):
+                return
+
+            # Keepalive ping
+            now = asyncio.get_event_loop().time()
+            if now - last_ping >= _SSE_PING_INTERVAL:
+                yield _sse({"ping": True})
+                last_ping = now
+
+            await asyncio.sleep(_SSE_POLL_INTERVAL)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+def _sse(data: dict) -> str:
+    return f"data: {json.dumps(data)}\n\n"
 
 
 async def _execute_workflow(session_id: int) -> None:
@@ -95,13 +122,14 @@ async def _execute_workflow(session_id: int) -> None:
         final_state = initial_state.copy()
         try:
             async for chunk in workflow.astream(initial_state):
-                node_name = list(chunk.keys())[0]
+                node_name = next(iter(chunk))
                 final_state.update(chunk[node_name])
-                await progress.emit(session_id, {
+                progress.emit(session_id, {
                     "node": node_name,
                     "status": "complete",
                     "quality_score": final_state.get("quality_score"),
                 })
+                logger.debug("Node '%s' complete for session %d", node_name, session_id)
 
             if final_state.get("error"):
                 session.status = "error"
@@ -111,15 +139,25 @@ async def _execute_workflow(session_id: int) -> None:
                 session.report_content = final_state.get("analysis")
                 session.quality_score = final_state.get("quality_score")
 
-            await progress.finish(session_id, {
+            progress.finish(session_id, {
                 "node": "done",
                 "status": session.status,
-                "report_path": session.report_path,
             })
+            logger.info(
+                "Workflow complete for session %d — status=%s quality=%.2f",
+                session_id,
+                session.status,
+                session.quality_score or 0,
+            )
 
-        except Exception as e:
+        except Exception as exc:
+            logger.exception("Workflow error for session %d", session_id)
             session.status = "error"
-            await progress.finish(session_id, {"node": "error", "status": "error", "message": str(e)})
+            progress.finish(session_id, {
+                "node": "error",
+                "status": "error",
+                "message": str(exc),
+            })
         finally:
             session.updated_at = datetime.utcnow()
             db.add(session)

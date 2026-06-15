@@ -28,7 +28,6 @@ export default function ProfileMenu({ onClose }: ProfileMenuProps) {
 
   return (
     <div ref={ref} className={styles.menu}>
-      {/* Profile header */}
       <div className={styles.profileHeader}>
         <div className={styles.avatar}>{USER.initials}</div>
         <div className={styles.profileInfo}>

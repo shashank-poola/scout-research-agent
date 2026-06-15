@@ -7,8 +7,8 @@ import {
   SparklesIcon,
   ChevronDownIcon,
 } from '@hugeicons/core-free-icons';
-import { listSessions } from '../routes';
-import type { Session } from '../lib/types';
+import { listSessions } from '../../routes';
+import type { Session } from '../../lib/types';
 import ReportCard from './ReportCard';
 import styles from './Dashboard.module.css';
 
@@ -46,36 +46,6 @@ export default function Dashboard({ onStartResearch, onOpenSession, refreshKey }
 
   return (
     <div className={styles.page}>
-      <div className={styles.heroBg} aria-hidden>
-        <svg
-          className={styles.heroSvg}
-          viewBox="0 0 800 340"
-          fill="none"
-          preserveAspectRatio="xMidYMid slice"
-        >
-          {/* Left parallelogram — wireframe only */}
-          <rect
-            x="-30" y="-60"
-            width="460" height="300"
-            rx="12"
-            stroke="#dcdcdc"
-            strokeWidth="1.2"
-            fill="none"
-            transform="rotate(28 200 90)"
-          />
-          {/* Right parallelogram — mirrored */}
-          <rect
-            x="370" y="-60"
-            width="460" height="300"
-            rx="12"
-            stroke="#dcdcdc"
-            strokeWidth="1.2"
-            fill="none"
-            transform="rotate(-28 600 90)"
-          />
-        </svg>
-      </div>
-
       <div className={styles.content}>
         <h1 className={styles.title}>What do you want to research?</h1>
 

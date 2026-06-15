@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { sendChat, getChatHistory, getPdfUrl } from '../lib/api';
-import type { ChatMessage, Session } from '../lib/types';
+import { sendChat, getChatHistory, getPdfUrl } from '../../lib/api';
+import type { ChatMessage, Session } from '../../lib/types';
 import styles from './ChatInterface.module.css';
 
 interface ChatInterfaceProps {
@@ -55,7 +55,6 @@ export default function ChatInterface({ session, onBack }: ChatInterfaceProps) {
 
   return (
     <div className={styles.container}>
-      {/* Header */}
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={onBack}>
           <IconArrowLeft />
@@ -75,7 +74,6 @@ export default function ChatInterface({ session, onBack }: ChatInterfaceProps) {
         </a>
       </div>
 
-      {/* Messages */}
       <div className={styles.messages}>
         {historyLoading ? (
           <div className={styles.emptyState}>Loading history…</div>
@@ -124,7 +122,6 @@ export default function ChatInterface({ session, onBack }: ChatInterfaceProps) {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div className={styles.inputArea}>
         <div className={styles.inputBox}>
           <textarea

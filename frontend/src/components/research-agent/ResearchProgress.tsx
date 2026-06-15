@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { streamProgress } from '../lib/api';
-import type { ProgressEvent, Session } from '../lib/types';
+import { streamProgress } from '../../lib/api';
+import type { ProgressEvent, Session } from '../../lib/types';
 import styles from './ResearchProgress.module.css';
 
 const NODES: Record<string, { label: string; description: string }> = {

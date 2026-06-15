@@ -1,4 +1,4 @@
-import type { Session } from '../lib/types';
+import type { Session } from '../../lib/types';
 import styles from './ReportCard.module.css';
 
 interface ReportCardProps {

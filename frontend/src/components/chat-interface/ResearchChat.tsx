@@ -7,9 +7,9 @@ import {
   CheckmarkCircle01Icon,
   Pdf01Icon,
 } from '@hugeicons/core-free-icons';
-import { createSession, runWorkflow, streamProgress, sendChat, getChatHistory, getPdfUrl } from '../routes';
-import type { Session, ProgressEvent } from '../lib/types';
-import logoScout from '../assets/logoscout.png';
+import { createSession, runWorkflow, streamProgress, sendChat, getChatHistory, getPdfUrl } from '../../routes';
+import type { Session, ProgressEvent } from '../../lib/types';
+import logoScout from '../../assets/logoscout.png';
 import styles from './ResearchChat.module.css';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ export default function ResearchChat({
   const [chatLoading, setChatLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const initiated = useRef(false);       // guard against React StrictMode double-invoke
+  const initiated = useRef(false);
   const sidebarCollapsed = useRef(false);
 
   const push = useCallback((msg: Omit<Msg, 'id'>) => {
@@ -188,7 +188,6 @@ export default function ResearchChat({
     <div className={`${styles.root} ${pdfReady ? styles.withPdf : ''}`}>
       {/* ── Chat panel ──────────────────────────────────────────────────── */}
       <div className={styles.chatPanel}>
-        {/* Header — no back button, company name + status only */}
         <div className={styles.header}>
           <div className={styles.headerInner}>
             <div className={styles.headerInfo}>
@@ -206,7 +205,6 @@ export default function ResearchChat({
           </div>
         </div>
 
-        {/* Messages */}
         <div className={styles.messages}>
           <div className={styles.messagesInner}>
             {messages.map((msg) => (
@@ -224,7 +222,6 @@ export default function ResearchChat({
           </div>
         </div>
 
-        {/* Input */}
         <div className={styles.inputArea}>
           <div className={styles.inputInner}>
             <div className={styles.inputBox}>

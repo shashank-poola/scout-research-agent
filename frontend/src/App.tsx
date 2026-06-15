@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import type { Session } from './lib/types';
-import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import ResearchChat from './components/ResearchChat';
+import Sidebar from './components/sidebar/Sidebar';
+import Dashboard from './components/dashboard/Dashboard';
+import ResearchChat from './components/chat-interface/ResearchChat';
 import './App.css';
 
 type View = 'home' | 'chat';
