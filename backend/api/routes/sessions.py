@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from pydantic import BaseModel
@@ -22,6 +23,13 @@ async def create_session(body: CreateSessionRequest, db: Session = Depends(get_s
     return session
 
 
+@router.get("/", response_model=list[ResearchSession])
+async def list_sessions(db: Session = Depends(get_session)):
+    return db.exec(
+        select(ResearchSession).order_by(ResearchSession.created_at.desc())
+    ).all()
+
+
 @router.get("/{session_id}", response_model=ResearchSession)
 async def get_session_by_id(session_id: int, db: Session = Depends(get_session)):
     session = db.get(ResearchSession, session_id)
@@ -30,6 +38,13 @@ async def get_session_by_id(session_id: int, db: Session = Depends(get_session))
     return session
 
 
-@router.get("/", response_model=list[ResearchSession])
-async def list_sessions(db: Session = Depends(get_session)):
-    return db.exec(select(ResearchSession).order_by(ResearchSession.created_at.desc())).all()
+@router.delete("/{session_id}")
+async def delete_session(session_id: int, db: Session = Depends(get_session)):
+    session = db.get(ResearchSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.report_path and os.path.exists(session.report_path):
+        os.remove(session.report_path)
+    db.delete(session)
+    db.commit()
+    return {"message": "Session deleted", "session_id": session_id}

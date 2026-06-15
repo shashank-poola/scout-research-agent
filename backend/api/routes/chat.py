@@ -5,9 +5,10 @@ from core.database import get_session
 from models.session import ResearchSession
 from models.chat import ChatMessage
 from services.llm import get_llm
-from langchain_core.messages import HumanMessage, SystemMessage
+from services.prompts import CHAT_SYSTEM_PROMPT
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
-router = APIRouter(prefix="/chat", tags=["chat"])
+router = APIRouter(prefix="/sessions", tags=["chat"])
 
 
 class ChatRequest(BaseModel):
@@ -19,13 +20,15 @@ class ChatResponse(BaseModel):
     content: str
 
 
-@router.post("/{session_id}", response_model=ChatResponse)
+@router.post("/{session_id}/chat", response_model=ChatResponse)
 async def chat(session_id: int, body: ChatRequest, db: Session = Depends(get_session)):
     session = db.get(ResearchSession, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     if session.status != "done":
-        raise HTTPException(status_code=400, detail="Report not ready yet")
+        raise HTTPException(status_code=400, detail="Research not complete yet")
+    if not session.report_content:
+        raise HTTPException(status_code=400, detail="No report content available")
 
     history = db.exec(
         select(ChatMessage)
@@ -33,34 +36,30 @@ async def chat(session_id: int, body: ChatRequest, db: Session = Depends(get_ses
         .order_by(ChatMessage.created_at)
     ).all()
 
-    # Persist user message
-    user_msg = ChatMessage(session_id=session_id, role="user", content=body.message)
-    db.add(user_msg)
+    system_prompt = CHAT_SYSTEM_PROMPT.format(
+        company_name=session.company_name,
+        report_content=session.report_content,
+    )
 
-    # Build LLM messages
+    messages = [SystemMessage(content=system_prompt)]
+    for m in history:
+        if m.role == "user":
+            messages.append(HumanMessage(content=m.content))
+        else:
+            messages.append(AIMessage(content=m.content))
+    messages.append(HumanMessage(content=body.message))
+
     llm = get_llm()
-    messages = [
-        SystemMessage(content=(
-            f"You are an AI assistant that answers questions about {session.company_name}. "
-            "Answer ONLY based on the research report content. If the answer is not in the report, say so."
-        )),
-        *[
-            HumanMessage(content=m.content) if m.role == "user"
-            else SystemMessage(content=m.content)
-            for m in history
-        ],
-        HumanMessage(content=body.message),
-    ]
-
     response = await llm.ainvoke(messages)
-    assistant_msg = ChatMessage(session_id=session_id, role="assistant", content=response.content)
-    db.add(assistant_msg)
+
+    db.add(ChatMessage(session_id=session_id, role="user", content=body.message))
+    db.add(ChatMessage(session_id=session_id, role="assistant", content=response.content))
     db.commit()
 
     return ChatResponse(role="assistant", content=response.content)
 
 
-@router.get("/{session_id}/history", response_model=list[ChatResponse])
+@router.get("/{session_id}/chat/history", response_model=list[ChatResponse])
 async def chat_history(session_id: int, db: Session = Depends(get_session)):
     messages = db.exec(
         select(ChatMessage)

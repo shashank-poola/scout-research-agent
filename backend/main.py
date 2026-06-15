@@ -6,7 +6,11 @@ from api.routes import sessions, workflow, report, chat
 
 setup_logging()
 
-app = FastAPI(title="Scout AI", version="1.0.0")
+app = FastAPI(
+    title="Scout AI",
+    version="1.0.0",
+    description="AI-powered company research copilot",
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,6 +26,7 @@ async def on_startup():
     init_db()
 
 
+# All routes under /api/sessions/...
 app.include_router(sessions.router, prefix="/api")
 app.include_router(workflow.router, prefix="/api")
 app.include_router(report.router, prefix="/api")

@@ -8,7 +8,9 @@ class ResearchSession(SQLModel, table=True):
     company_name: str
     website: str
     research_objective: str
-    status: str = "pending"  # pending | running | done | error
+    status: str = "pending"          # pending | running | done | error
     report_path: Optional[str] = None
+    report_content: Optional[str] = None   # full analysis text (used for chat context)
+    quality_score: Optional[float] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
