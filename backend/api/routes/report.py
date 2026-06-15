@@ -66,9 +66,15 @@ async def download_report(session_id: int, download: bool = False, db: Session =
             headers={"Content-Disposition": disposition},
         )
 
-    # PDF fallback
+    # Real PDF
+    if download:
+        return FileResponse(
+            path=str(path),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="scout_{slug}.pdf"'},
+        )
     return FileResponse(
         path=str(path),
         media_type="application/pdf",
-        filename=f"scout_{slug}.pdf",
+        headers={"Content-Disposition": "inline"},
     )

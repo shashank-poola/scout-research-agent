@@ -72,18 +72,21 @@ def _extract_company_name(query: str) -> str:
     return clean[:50]
 
 
-def _build_html(state: ResearchState) -> str:
-    sections = _parse_sections(state.get("analysis", ""))
-    ordered = {title: body for title, body in sections}
-    section_html = ""
+def _get_ordered_sections(state: ResearchState) -> list[tuple[str, str]]:
+    """Return analysis sections in canonical order."""
+    raw = _parse_sections(state.get("analysis", ""))
+    lookup = {title: body for title, body in raw}
+    ordered = []
     for title in _SECTION_ORDER:
-        body = ordered.pop(title, "Insufficient public data available.")
-        section_html += f"""
-        <section>
-          <h2>{title}</h2>
-          <div class="section-body">{_paragraphs_to_html(body)}</div>
-        </section>"""
-    for title, body in ordered.items():
+        ordered.append((title, lookup.pop(title, "Insufficient public data available.")))
+    ordered.extend(lookup.items())
+    return ordered
+
+
+def _build_html(state: ResearchState) -> str:
+    ordered = _get_ordered_sections(state)
+    section_html = ""
+    for title, body in ordered:
         section_html += f"""
         <section>
           <h2>{title}</h2>
@@ -247,7 +250,15 @@ def _build_html(state: ResearchState) -> str:
 
 
 async def report_generator_node(state: ResearchState) -> dict:
-    html = _build_html(state)
-    path = await generate_pdf(html, session_id=state["session_id"])
-    logger.info("Report PDF saved to %s", path)
+    ordered_sections = _get_ordered_sections(state)
+    company_display = _extract_company_name(state["company_name"])
+    html = _build_html(state)   # kept for chat Q&A context in state
+    path = await generate_pdf(
+        session_id=state["session_id"],
+        company_name=company_display,
+        research_objective=state.get("research_objective", ""),
+        sections=ordered_sections,
+        quality_score=state.get("quality_score"),
+    )
+    logger.info("PDF report saved to %s", path)
     return {"report_html": html, "report_path": path}
