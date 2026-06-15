@@ -5,7 +5,7 @@
   background: var(--bg);
 }
 
-/* Hero background */
+/* Hero background — wireframe shapes matching design */
 .heroBg {
   position: absolute;
   top: 0;
@@ -17,28 +17,9 @@
   z-index: 0;
 }
 
-.heroShape1 {
-  position: absolute;
-  top: -120px;
-  left: 50%;
-  transform: translateX(-50%) rotate(-14deg);
-  width: 700px;
-  height: 320px;
-  background: #f0eeff;
-  border-radius: 32px;
-  opacity: 0.55;
-}
-
-.heroShape2 {
-  position: absolute;
-  top: -80px;
-  left: 50%;
-  transform: translateX(-50%) rotate(10deg);
-  width: 560px;
-  height: 260px;
-  background: #e8e4fc;
-  border-radius: 28px;
-  opacity: 0.4;
+.heroSvg {
+  width: 100%;
+  height: 100%;
 }
 
 /* Content */
@@ -188,7 +169,13 @@
   background: var(--bg-subtle);
   color: var(--accent);
 }
-.suggestItem svg { flex-shrink: 0; }
+
+.suggestArrow {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  line-height: 1;
+}
 
 /* Reports */
 .reports {

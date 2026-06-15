@@ -66,11 +66,16 @@
   --font-body: 'ABC Diatype', system-ui, -apple-system, sans-serif;
   --font-size-xs: 11px;
   --font-size-sm: 13px;
-  --font-size-base: 14px;
+  --font-size-base: 15px;
   --font-size-md: 15px;
   --font-size-lg: 18px;
   --font-size-xl: 22px;
   --font-size-2xl: 32px;
+
+  /* text colors updated to match ABC Diatype spec rgb(68,68,68) */
+  --text-primary: #444444;
+  --text-secondary: #8a8a8a;
+  --text-tertiary: #bdbdbd;
 }
 
 html, body, #root {
@@ -80,6 +85,7 @@ html, body, #root {
 body {
   font-family: var(--font-body);
   font-size: var(--font-size-base);
+  line-height: 24px;
   color: var(--text-primary);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;

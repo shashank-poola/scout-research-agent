@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  ArrowLeft01Icon,
   Sent02Icon,
   Mic01Icon,
   Download01Icon,
@@ -12,7 +11,7 @@ import { createSession, runWorkflow, streamProgress, sendChat, getChatHistory, g
 import type { Session, ProgressEvent } from '../lib/types';
 import styles from './ResearchChat.module.css';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 type MsgRole = 'user' | 'ai';
 type MsgKind = 'text' | 'progress' | 'complete' | 'error';
 
@@ -21,10 +20,9 @@ interface Msg {
   role: MsgRole;
   kind: MsgKind;
   content: string;
-  node?: string;
 }
 
-// ── Node labels ───────────────────────────────────────────────────────────────
+// ── Node labels ────────────────────────────────────────────────────────────────
 const NODE_LABELS: Record<string, string> = {
   planner: '📋 Planning search queries…',
   researcher: '🔍 Researching across the web with Exa…',
@@ -32,10 +30,10 @@ const NODE_LABELS: Record<string, string> = {
   quality_check: '✅ Running quality check…',
   generate_report: '📄 Generating PDF report…',
   done: '🎉 Research complete!',
-  error: '❌ An error occurred during research.',
+  error: '❌ An error occurred.',
 };
 
-// ── Props ─────────────────────────────────────────────────────────────────────
+// ── Props ──────────────────────────────────────────────────────────────────────
 interface ResearchChatProps {
   initialQuery: string;
   existingSession?: Session;
@@ -45,6 +43,15 @@ interface ResearchChatProps {
 
 let msgCounter = 0;
 const uid = () => `msg-${++msgCounter}`;
+
+function stripBold(text: string): string {
+  return text.replace(/\*\*(.*?)\*\*/g, '$1');
+}
+
+function renderMarkdown(text: string): React.ReactNode {
+  const parts = text.split(/\*\*(.*?)\*\*/g);
+  return parts.map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part));
+}
 
 export default function ResearchChat({
   initialQuery,
@@ -62,44 +69,48 @@ export default function ResearchChat({
   const [chatLoading, setChatLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const initiated = useRef(false);       // guard against React StrictMode double-invoke
   const sidebarCollapsed = useRef(false);
 
   const push = useCallback((msg: Omit<Msg, 'id'>) => {
     setMessages((prev) => [...prev, { id: uid(), ...msg }]);
   }, []);
 
-  // Scroll to bottom whenever messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ── Start research or restore existing session ────────────────────────────
+  // ── Init (runs once) ───────────────────────────────────────────────────────
   useEffect(() => {
+    if (initiated.current) return;
+    initiated.current = true;
+
     if (existingSession?.status === 'done') {
-      // Restore chat history for a completed session
       push({ role: 'user', kind: 'text', content: initialQuery });
-      push({ role: 'ai', kind: 'complete', content: `Research on **${existingSession.company_name}** is complete. Ask me anything about the report.` });
-      getChatHistory(existingSession.id).then((history) => {
-        history.forEach((m) => push({ role: m.role === 'user' ? 'user' : 'ai', kind: 'text', content: m.content }));
-      });
-      if (!sidebarCollapsed.current) {
-        sidebarCollapsed.current = true;
-        onSidebarCollapse();
-      }
+      push({ role: 'ai', kind: 'complete', content: `Research on ${existingSession.company_name} is complete. Ask me anything about the report.` });
+      getChatHistory(existingSession.id).then((history) =>
+        history.forEach((m) =>
+          push({ role: m.role === 'user' ? 'user' : 'ai', kind: 'text', content: m.content }),
+        ),
+      );
+      collapseSidebar();
       return;
     }
 
     if (existingSession?.status === 'running') {
-      setSession(existingSession);
       push({ role: 'user', kind: 'text', content: initialQuery });
       push({ role: 'ai', kind: 'progress', content: 'Research is already in progress…' });
       attachStream(existingSession.id);
       return;
     }
 
-    // Brand-new research
+    // New research
     push({ role: 'user', kind: 'text', content: initialQuery });
-    push({ role: 'ai', kind: 'progress', content: `Starting research on **${initialQuery}**. I'll search the web, analyze findings, and generate a comprehensive report.` });
+    push({
+      role: 'ai',
+      kind: 'progress',
+      content: `Starting research on "${initialQuery}". I'll search the web, analyze findings, and generate a comprehensive report.`,
+    });
 
     (async () => {
       try {
@@ -123,31 +134,31 @@ export default function ResearchChat({
     const stop = streamProgress(sessionId, (evt: ProgressEvent) => {
       if (evt.ping) return;
       if (evt.done) {
-        handleResearchDone(sessionId, evt);
+        handleDone(sessionId);
         stop();
         return;
       }
       const label = NODE_LABELS[evt.node] ?? `${evt.node}…`;
-      push({ role: 'ai', kind: 'progress', content: label, node: evt.node });
+      push({ role: 'ai', kind: 'progress', content: label });
     });
   }
 
-  function handleResearchDone(sessionId: number, _evt: ProgressEvent) {
-    push({
-      role: 'ai',
-      kind: 'complete',
-      content: '✅ Research complete! I\'ve generated your PDF report. Ask me anything about the findings.',
-    });
+  function handleDone(sessionId: number) {
+    push({ role: 'ai', kind: 'complete', content: 'Research complete! PDF report is ready. Ask me anything about the findings.' });
     setPdfReady(true);
     setPhase('chat');
+    setSession((prev) => (prev ? { ...prev, id: sessionId, status: 'done' } : prev));
+    collapseSidebar();
+  }
+
+  function collapseSidebar() {
     if (!sidebarCollapsed.current) {
       sidebarCollapsed.current = true;
       onSidebarCollapse();
     }
-    setSession((prev) => prev ? { ...prev, id: sessionId, status: 'done' } : prev);
   }
 
-  // ── Chat Q&A ──────────────────────────────────────────────────────────────
+  // ── Chat Q&A ───────────────────────────────────────────────────────────────
   const handleSend = async () => {
     const msg = input.trim();
     if (!msg || chatLoading || !session) return;
@@ -170,25 +181,23 @@ export default function ResearchChat({
   };
 
   const pdfUrl = session ? getPdfUrl(session.id) : null;
+  const displayName = session?.company_name ?? initialQuery;
 
   return (
     <div className={`${styles.root} ${pdfReady ? styles.withPdf : ''}`}>
-      {/* ── Left: Chat panel ────────────────────────────────────────────── */}
+      {/* ── Chat panel ──────────────────────────────────────────────────── */}
       <div className={styles.chatPanel}>
-        {/* Header */}
+        {/* Header — no back button, company name + status only */}
         <div className={styles.header}>
-          <button className={styles.backBtn} onClick={onBack}>
-            <HugeiconsIcon icon={ArrowLeft01Icon} size={18} color="currentColor" strokeWidth={1.8} />
-          </button>
           <div className={styles.headerInfo}>
-            <h2 className={styles.headerTitle}>{session?.company_name ?? initialQuery}</h2>
+            <h2 className={styles.headerTitle}>{displayName}</h2>
             <span className={styles.headerSub}>
               {phase === 'research' ? 'Researching…' : 'AI Research Assistant'}
             </span>
           </div>
           {pdfUrl && (
             <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className={styles.pdfBtn}>
-              <HugeiconsIcon icon={Download01Icon} size={14} color="currentColor" strokeWidth={1.8} />
+              <HugeiconsIcon icon={Download01Icon} size={13} color="currentColor" strokeWidth={1.8} />
               PDF
             </a>
           )}
@@ -216,7 +225,7 @@ export default function ResearchChat({
             <textarea
               ref={inputRef}
               className={styles.textarea}
-              placeholder={phase === 'research' ? 'Research in progress…' : `Ask about ${session?.company_name ?? initialQuery}…`}
+              placeholder={phase === 'research' ? 'Research in progress…' : `Ask about ${displayName}…`}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKey}
@@ -237,29 +246,30 @@ export default function ResearchChat({
         </div>
       </div>
 
-      {/* ── Right: PDF viewer ────────────────────────────────────────────── */}
+      {/* ── PDF panel ───────────────────────────────────────────────────── */}
       {pdfReady && pdfUrl && (
         <div className={styles.pdfPanel}>
           <div className={styles.pdfHeader}>
-            <HugeiconsIcon icon={Pdf01Icon} size={16} color="currentColor" strokeWidth={1.8} />
-            <span>{session?.company_name} Research Report</span>
-            <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className={styles.pdfOpenBtn}>
-              <HugeiconsIcon icon={Download01Icon} size={13} color="currentColor" strokeWidth={1.8} />
-              Download
-            </a>
+            <HugeiconsIcon icon={Pdf01Icon} size={15} color="currentColor" strokeWidth={1.8} />
+            <span>{displayName} — Research Report</span>
+            <div className={styles.pdfHeaderActions}>
+              <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className={styles.pdfOpenBtn}>
+                <HugeiconsIcon icon={Download01Icon} size={13} color="currentColor" strokeWidth={1.8} />
+                Download
+              </a>
+              <button className={styles.pdfOpenBtn} onClick={onBack}>
+                ← Dashboard
+              </button>
+            </div>
           </div>
-          <iframe
-            src={pdfUrl}
-            className={styles.pdfFrame}
-            title={`${session?.company_name} Research Report PDF`}
-          />
+          <iframe src={pdfUrl} className={styles.pdfFrame} title={`${displayName} Research Report`} />
         </div>
       )}
     </div>
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Sub-components ─────────────────────────────────────────────────────────────
 
 function AiAvatar() {
   return <div className={styles.aiAvatar}>S</div>;
@@ -270,7 +280,7 @@ function MessageBubble({ msg }: { msg: Msg }) {
     return (
       <div className={styles.userRow}>
         <div className={`${styles.bubble} ${styles.userBubble}`}>
-          {msg.content}
+          {stripBold(msg.content)}
         </div>
       </div>
     );
@@ -290,7 +300,7 @@ function MessageBubble({ msg }: { msg: Msg }) {
       <div className={styles.aiRow}>
         <AiAvatar />
         <div className={`${styles.bubble} ${styles.aiBubble} ${styles.completeBubble}`}>
-          <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} color="#16a34a" strokeWidth={1.8} />
+          <HugeiconsIcon icon={CheckmarkCircle01Icon} size={15} color="#16a34a" strokeWidth={1.8} />
           <span>{msg.content}</span>
         </div>
       </div>
@@ -311,7 +321,9 @@ function MessageBubble({ msg }: { msg: Msg }) {
   return (
     <div className={styles.aiRow}>
       <AiAvatar />
-      <div className={`${styles.bubble} ${styles.aiBubble}`}>{msg.content}</div>
+      <div className={`${styles.bubble} ${styles.aiBubble}`}>
+        {renderMarkdown(msg.content)}
+      </div>
     </div>
   );
 }

@@ -6,7 +6,6 @@ import {
   Sent02Icon,
   SparklesIcon,
   ChevronDownIcon,
-  ArrowRight01Icon,
 } from '@hugeicons/core-free-icons';
 import { listSessions } from '../routes';
 import type { Session } from '../lib/types';
@@ -48,8 +47,33 @@ export default function Dashboard({ onStartResearch, onOpenSession, refreshKey }
   return (
     <div className={styles.page}>
       <div className={styles.heroBg} aria-hidden>
-        <div className={styles.heroShape1} />
-        <div className={styles.heroShape2} />
+        <svg
+          className={styles.heroSvg}
+          viewBox="0 0 800 340"
+          fill="none"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          {/* Left parallelogram — wireframe only */}
+          <rect
+            x="-30" y="-60"
+            width="460" height="300"
+            rx="12"
+            stroke="#dcdcdc"
+            strokeWidth="1.2"
+            fill="none"
+            transform="rotate(28 200 90)"
+          />
+          {/* Right parallelogram — mirrored */}
+          <rect
+            x="370" y="-60"
+            width="460" height="300"
+            rx="12"
+            stroke="#dcdcdc"
+            strokeWidth="1.2"
+            fill="none"
+            transform="rotate(-28 600 90)"
+          />
+        </svg>
       </div>
 
       <div className={styles.content}>
@@ -101,7 +125,7 @@ export default function Dashboard({ onStartResearch, onOpenSession, refreshKey }
                 className={styles.suggestItem}
                 onClick={() => { setQuery(s); inputRef.current?.focus(); }}
               >
-                <HugeiconsIcon icon={ArrowRight01Icon} size={12} color="currentColor" strokeWidth={2} />
+                <span className={styles.suggestArrow}>↳</span>
                 <span>{s}</span>
               </button>
             ))}
