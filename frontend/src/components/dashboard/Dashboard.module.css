@@ -42,11 +42,15 @@
   width: 100%;
   border: none;
   outline: none;
+  resize: none;
   padding: 18px 20px 10px;
   font-size: var(--font-size-md);
+  font-family: var(--font-body);
   color: var(--text-primary);
   background: transparent;
   line-height: 1.5;
+  overflow-y: hidden;
+  display: block;
 }
 .input::placeholder {
   color: var(--text-tertiary);

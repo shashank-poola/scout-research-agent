@@ -34,29 +34,46 @@ def _parse_sections(analysis: str) -> list[tuple[str, str]]:
     return sections
 
 
+def _inline_md(text: str) -> str:
+    """Render inline **bold** and *italic* markdown to HTML."""
+    text = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", text)
+    text = re.sub(r"\*(.*?)\*", r"<em>\1</em>", text)
+    return text
+
+
 def _paragraphs_to_html(text: str) -> str:
-    """Convert plain text / simple markdown to HTML paragraphs."""
+    """Convert markdown text to HTML — handles sub-headings, bullets, bold."""
     lines = text.splitlines()
     html_parts = []
     for line in lines:
         stripped = line.strip()
         if not stripped:
             continue
-        # bullet points
-        if stripped.startswith(("- ", "* ", "• ")):
-            html_parts.append(f"<li>{stripped[2:]}</li>")
+        if stripped.startswith("### "):
+            html_parts.append(f"<h3>{_inline_md(stripped[4:])}</h3>")
+        elif stripped.startswith(("- ", "* ", "• ")):
+            html_parts.append(f"<li>{_inline_md(stripped[2:])}</li>")
         else:
-            html_parts.append(f"<p>{stripped}</p>")
+            html_parts.append(f"<p>{_inline_md(stripped)}</p>")
 
-    # wrap consecutive <li> in <ul>
     result = "\n".join(html_parts)
     result = re.sub(r"((?:<li>.*?</li>\n?)+)", r"<ul>\1</ul>", result, flags=re.DOTALL)
     return result
 
 
+def _extract_company_name(query: str) -> str:
+    """Pull the short company name out of a potentially long research query."""
+    for sep in ["—", " - ", ": "]:
+        if sep in query:
+            part = query.split(sep)[0].strip()
+            part = re.sub(r"^[Rr]esearch\s+(on\s+)?", "", part).strip()
+            return part[:60]
+    clean = re.sub(r"^[Rr]esearch\s+(on\s+)?", "", query).strip()
+    return clean[:50]
+
+
 def _build_html(state: ResearchState) -> str:
     sections = _parse_sections(state.get("analysis", ""))
-    # Sort by canonical order, append any extras
     ordered = {title: body for title, body in sections}
     section_html = ""
     for title in _SECTION_ORDER:
@@ -66,7 +83,6 @@ def _build_html(state: ResearchState) -> str:
           <h2>{title}</h2>
           <div class="section-body">{_paragraphs_to_html(body)}</div>
         </section>"""
-    # Any extra sections the LLM produced
     for title, body in ordered.items():
         section_html += f"""
         <section>
@@ -74,14 +90,17 @@ def _build_html(state: ResearchState) -> str:
           <div class="section-body">{_paragraphs_to_html(body)}</div>
         </section>"""
 
+    company_display = _extract_company_name(state["company_name"])
     quality_pct = int((state.get("quality_score") or 0) * 100)
     generated_at = datetime.now(timezone.utc).strftime("%B %d, %Y")
+
+    quality_color = '#16a34a' if quality_pct >= 70 else '#d97706'
 
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Scout AI — {state['company_name']} Research Report</title>
+  <title>Scout AI — {company_display} Research Report</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -89,75 +108,76 @@ def _build_html(state: ResearchState) -> str:
     body {{
       font-family: 'Inter', -apple-system, sans-serif;
       font-size: 10.5pt;
-      line-height: 1.7;
+      line-height: 1.75;
       color: #1a1a2e;
       background: #ffffff;
     }}
 
     /* Cover */
     .cover {{
-      min-height: 240px;
+      min-height: 220px;
       background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
       color: #fff;
-      padding: 48px 56px 40px;
-      margin-bottom: 0;
+      padding: 44px 56px 36px;
     }}
     .cover-label {{
-      font-size: 9pt;
-      letter-spacing: 0.15em;
+      font-size: 8.5pt;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
-      opacity: 0.6;
-      margin-bottom: 16px;
+      opacity: 0.55;
+      margin-bottom: 14px;
     }}
     .cover h1 {{
-      font-size: 28pt;
+      font-size: 26pt;
       font-weight: 700;
       letter-spacing: -0.5px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+      line-height: 1.15;
     }}
     .cover-sub {{
-      font-size: 11pt;
-      opacity: 0.75;
-      margin-bottom: 28px;
+      font-size: 10.5pt;
+      opacity: 0.65;
+      margin-bottom: 26px;
+      max-width: 560px;
     }}
     .cover-meta {{
       display: flex;
       gap: 32px;
-      border-top: 1px solid rgba(255,255,255,0.2);
-      padding-top: 20px;
-      font-size: 9pt;
-      opacity: 0.7;
+      border-top: 1px solid rgba(255,255,255,0.18);
+      padding-top: 18px;
+      font-size: 8.5pt;
+      opacity: 0.65;
     }}
     .cover-meta strong {{ display: block; opacity: 1; font-weight: 600; margin-bottom: 2px; }}
 
-    /* Quality badge */
+    /* Quality bar */
     .quality-bar {{
       background: #f4f6fa;
       border-bottom: 1px solid #e8ecf4;
-      padding: 12px 56px;
+      padding: 10px 56px;
       display: flex;
       align-items: center;
-      gap: 16px;
-      font-size: 9pt;
+      gap: 14px;
+      font-size: 8.5pt;
       color: #555;
     }}
     .quality-score {{
       font-weight: 700;
-      font-size: 11pt;
-      color: {'#16a34a' if quality_pct >= 70 else '#d97706'};
+      font-size: 10.5pt;
+      color: {quality_color};
     }}
     .quality-label {{ opacity: 0.7; }}
 
     /* Body */
-    .body {{ padding: 40px 56px 56px; }}
+    .body {{ padding: 36px 56px 56px; }}
 
     /* Sections */
     section {{
-      margin-bottom: 36px;
+      margin-bottom: 32px;
       page-break-inside: avoid;
     }}
     h2 {{
-      font-size: 13pt;
+      font-size: 12.5pt;
       font-weight: 700;
       color: #302b63;
       border-left: 4px solid #6c5ce7;
@@ -165,24 +185,31 @@ def _build_html(state: ResearchState) -> str:
       margin-bottom: 14px;
       page-break-after: avoid;
     }}
+    h3 {{
+      font-size: 10.5pt;
+      font-weight: 600;
+      color: #302b63;
+      margin: 14px 0 6px;
+    }}
     .section-body p {{
-      margin-bottom: 10px;
+      margin-bottom: 9px;
       color: #2d2d44;
     }}
     .section-body ul {{
-      margin: 8px 0 10px 20px;
+      margin: 6px 0 10px 20px;
     }}
     .section-body li {{
       margin-bottom: 5px;
       color: #2d2d44;
     }}
+    strong {{ color: #1a1a2e; }}
 
     /* Footer */
     .footer {{
       border-top: 1px solid #e8ecf4;
-      padding: 16px 56px;
+      padding: 14px 56px;
       font-size: 8pt;
-      color: #999;
+      color: #aaa;
       display: flex;
       justify-content: space-between;
     }}
@@ -192,7 +219,7 @@ def _build_html(state: ResearchState) -> str:
 
   <div class="cover">
     <div class="cover-label">Scout AI · Research Report</div>
-    <h1>{state['company_name']}</h1>
+    <h1>{company_display}</h1>
     <div class="cover-sub">{state['research_objective']}</div>
     <div class="cover-meta">
       <div><strong>Generated</strong>{generated_at}</div>

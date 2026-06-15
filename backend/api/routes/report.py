@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
@@ -52,7 +53,10 @@ async def download_report(session_id: int, download: bool = False, db: Session =
     if not path.exists():
         raise HTTPException(status_code=404, detail="Report file missing")
 
-    slug = session.company_name.lower().replace(" ", "_")
+    # ASCII-safe slug — em-dashes and non-ASCII chars break Content-Disposition headers
+    raw = session.company_name.encode("ascii", "ignore").decode("ascii")
+    slug = re.sub(r"[^\w\s]", "", raw.lower())
+    slug = re.sub(r"\s+", "_", slug).strip("_")[:40] or "report"
 
     if path.suffix == ".html":
         disposition = f'attachment; filename="scout_{slug}.html"' if download else "inline"

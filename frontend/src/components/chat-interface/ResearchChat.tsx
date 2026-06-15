@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
-  Sent02Icon,
+  ArrowUp01Icon,
   Mic01Icon,
   Download01Icon,
   CheckmarkCircle01Icon,
   Pdf01Icon,
+  Home01Icon,
 } from '@hugeicons/core-free-icons';
 import { createSession, runWorkflow, streamProgress, sendChat, getChatHistory, getPdfUrl, getDownloadUrl } from '../../routes';
 import type { Session, ProgressEvent } from '../../lib/types';
@@ -184,6 +185,15 @@ export default function ResearchChat({
   const pdfUrl = session ? getPdfUrl(session.id) : null;
   const downloadUrl = session ? getDownloadUrl(session.id) : null;
   const displayName = session?.company_name ?? initialQuery;
+
+  // Short title for the PDF panel header — one line only
+  const pdfPanelTitle = (() => {
+    const name = displayName;
+    if (name.includes('—')) {
+      return name.split('—')[0].replace(/^Research\s+(on\s+)?/i, '').trim();
+    }
+    return name.length > 50 ? name.slice(0, 50) + '…' : name;
+  })();
 
   return (
     <div className={`${styles.root} ${pdfReady ? styles.withPdf : ''}`}>

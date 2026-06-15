@@ -3,7 +3,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Add01Icon,
   Mic01Icon,
-  Sent02Icon,
+  ArrowUp01Icon,
   SparklesIcon,
   ChevronDownIcon,
 } from '@hugeicons/core-free-icons';
@@ -29,7 +29,7 @@ export default function Dashboard({ onStartResearch, onOpenSession, refreshKey }
   const [sessions, setSessions] = useState<Session[]>([]);
   const [query, setQuery] = useState('');
   const [showAll, setShowAll] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     listSessions().then(setSessions).catch(() => {});
@@ -51,13 +51,21 @@ export default function Dashboard({ onStartResearch, onOpenSession, refreshKey }
 
         {/* Main input card */}
         <form className={styles.inputCard} onSubmit={handleSubmit}>
-          <input
+          <textarea
             ref={inputRef}
             className={styles.input}
-            type="text"
             placeholder="Enter a company name, website, or research topic…"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            rows={1}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              const el = e.target;
+              el.style.height = 'auto';
+              el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e); }
+            }}
             autoFocus
           />
           <div className={styles.inputBar}>
@@ -79,7 +87,7 @@ export default function Dashboard({ onStartResearch, onOpenSession, refreshKey }
                 disabled={!query.trim()}
                 title="Start research"
               >
-                <HugeiconsIcon icon={Sent02Icon} size={15} color="currentColor" strokeWidth={2} />
+                <HugeiconsIcon icon={ArrowUp01Icon} size={15} color="currentColor" strokeWidth={2} />
               </button>
             </div>
           </div>
