@@ -1,28 +1,4 @@
-@font-face {
-  font-family: 'Aeonik';
-  src: url('/fonts/fonnts.com-Aeonik-Regular.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Aeonik';
-  src: url('/fonts/fonnts.com-Aeonik-Bold.ttf') format('truetype');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'ABC Diatype';
-  src: url('/fonts/Web Fonts/4c4a87973ef80fc72049e01b9085fadc.woff2') format('woff2'),
-       url('/fonts/Web Fonts/4c4a87973ef80fc72049e01b9085fadc.woff') format('woff'),
-       url('/fonts/Web Fonts/4c4a87973ef80fc72049e01b9085fadc.ttf') format('truetype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -35,9 +11,9 @@
   --bg: #ffffff;
   --bg-sidebar: #FBFCFD;
   --bg-subtle: #f8f8f8;
-  --text-primary: #0d0d0d;
-  --text-secondary: #7a7a7a;
-  --text-tertiary: #b8b8b8;
+  --text-primary: #444444;
+  --text-secondary: #8a8a8a;
+  --text-tertiary: #bdbdbd;
   --border: #ebebeb;
   --border-strong: #d4d4d4;
   --accent: #6c5ce7;
@@ -62,8 +38,8 @@
   --radius-xl: 20px;
 
   /* typography */
-  --font-heading: 'Aeonik', system-ui, -apple-system, sans-serif;
-  --font-body: 'ABC Diatype', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Sora', system-ui, -apple-system, sans-serif;
+  --font-body: 'Sora', system-ui, -apple-system, sans-serif;
   --font-size-xs: 11px;
   --font-size-sm: 13px;
   --font-size-base: 15px;
@@ -71,11 +47,6 @@
   --font-size-lg: 18px;
   --font-size-xl: 22px;
   --font-size-2xl: 32px;
-
-  /* text colors updated to match ABC Diatype spec rgb(68,68,68) */
-  --text-primary: #444444;
-  --text-secondary: #8a8a8a;
-  --text-tertiary: #bdbdbd;
 }
 
 html, body, #root {

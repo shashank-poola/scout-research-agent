@@ -9,6 +9,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { createSession, runWorkflow, streamProgress, sendChat, getChatHistory, getPdfUrl } from '../routes';
 import type { Session, ProgressEvent } from '../lib/types';
+import logoScout from '../assets/logoscout.png';
 import styles from './ResearchChat.module.css';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -189,59 +190,65 @@ export default function ResearchChat({
       <div className={styles.chatPanel}>
         {/* Header — no back button, company name + status only */}
         <div className={styles.header}>
-          <div className={styles.headerInfo}>
-            <h2 className={styles.headerTitle}>{displayName}</h2>
-            <span className={styles.headerSub}>
-              {phase === 'research' ? 'Researching…' : 'AI Research Assistant'}
-            </span>
+          <div className={styles.headerInner}>
+            <div className={styles.headerInfo}>
+              <h2 className={styles.headerTitle}>{displayName}</h2>
+              <span className={styles.headerSub}>
+                {phase === 'research' ? 'Researching…' : 'AI Research Assistant'}
+              </span>
+            </div>
+            {pdfUrl && (
+              <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className={styles.pdfBtn}>
+                <HugeiconsIcon icon={Download01Icon} size={13} color="currentColor" strokeWidth={1.8} />
+                PDF
+              </a>
+            )}
           </div>
-          {pdfUrl && (
-            <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className={styles.pdfBtn}>
-              <HugeiconsIcon icon={Download01Icon} size={13} color="currentColor" strokeWidth={1.8} />
-              PDF
-            </a>
-          )}
         </div>
 
         {/* Messages */}
         <div className={styles.messages}>
-          {messages.map((msg) => (
-            <MessageBubble key={msg.id} msg={msg} />
-          ))}
-          {chatLoading && (
-            <div className={styles.aiRow}>
-              <AiAvatar />
-              <div className={`${styles.bubble} ${styles.aiBubble} ${styles.typingBubble}`}>
-                <span className={styles.dot} /><span className={styles.dot} /><span className={styles.dot} />
+          <div className={styles.messagesInner}>
+            {messages.map((msg) => (
+              <MessageBubble key={msg.id} msg={msg} />
+            ))}
+            {chatLoading && (
+              <div className={styles.aiRow}>
+                <AiAvatar />
+                <div className={`${styles.bubble} ${styles.aiBubble} ${styles.typingBubble}`}>
+                  <span className={styles.dot} /><span className={styles.dot} /><span className={styles.dot} />
+                </div>
               </div>
-            </div>
-          )}
-          <div ref={bottomRef} />
+            )}
+            <div ref={bottomRef} />
+          </div>
         </div>
 
         {/* Input */}
         <div className={styles.inputArea}>
-          <div className={styles.inputBox}>
-            <textarea
-              ref={inputRef}
-              className={styles.textarea}
-              placeholder={phase === 'research' ? 'Research in progress…' : `Ask about ${displayName}…`}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              rows={1}
-              disabled={phase === 'research'}
-            />
-            <button className={styles.micBtn} type="button" tabIndex={-1}>
-              <HugeiconsIcon icon={Mic01Icon} size={15} color="currentColor" strokeWidth={1.8} />
-            </button>
-            <button
-              className={styles.sendBtn}
-              onClick={handleSend}
-              disabled={!input.trim() || chatLoading || phase === 'research'}
-            >
-              <HugeiconsIcon icon={Sent02Icon} size={15} color="currentColor" strokeWidth={2} />
-            </button>
+          <div className={styles.inputInner}>
+            <div className={styles.inputBox}>
+              <textarea
+                ref={inputRef}
+                className={styles.textarea}
+                placeholder={phase === 'research' ? 'Research in progress…' : `Ask about ${displayName}…`}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKey}
+                rows={1}
+                disabled={phase === 'research'}
+              />
+              <button className={styles.micBtn} type="button" tabIndex={-1}>
+                <HugeiconsIcon icon={Mic01Icon} size={15} color="currentColor" strokeWidth={1.8} />
+              </button>
+              <button
+                className={styles.sendBtn}
+                onClick={handleSend}
+                disabled={!input.trim() || chatLoading || phase === 'research'}
+              >
+                <HugeiconsIcon icon={Sent02Icon} size={15} color="currentColor" strokeWidth={2} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -272,7 +279,7 @@ export default function ResearchChat({
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function AiAvatar() {
-  return <div className={styles.aiAvatar}>S</div>;
+  return <img src={logoScout} className={styles.aiAvatar} alt="Scout AI" />;
 }
 
 function MessageBubble({ msg }: { msg: Msg }) {
