@@ -165,6 +165,7 @@ export default function ResearchChat({
     const msg = input.trim();
     if (!msg || chatLoading || !session) return;
     setInput('');
+    if (inputRef.current) inputRef.current.style.height = 'auto';
     push({ role: 'user', kind: 'text', content: msg });
     setChatLoading(true);
     try {
@@ -239,9 +240,14 @@ export default function ResearchChat({
               <textarea
                 ref={inputRef}
                 className={styles.textarea}
-                placeholder={phase === 'research' ? 'Research in progress…' : `Ask about ${displayName}…`}
+                placeholder={phase === 'research' ? 'Research in progress…' : `Ask about ${pdfPanelTitle}…`}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  const el = e.target;
+                  el.style.height = 'auto';
+                  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+                }}
                 onKeyDown={handleKey}
                 rows={1}
                 disabled={phase === 'research'}
@@ -254,7 +260,7 @@ export default function ResearchChat({
                 onClick={handleSend}
                 disabled={!input.trim() || chatLoading || phase === 'research'}
               >
-                <HugeiconsIcon icon={Sent02Icon} size={15} color="currentColor" strokeWidth={2} />
+                <HugeiconsIcon icon={ArrowUp01Icon} size={15} color="currentColor" strokeWidth={2} />
               </button>
             </div>
           </div>
@@ -265,15 +271,16 @@ export default function ResearchChat({
       {pdfReady && pdfUrl && (
         <div className={styles.pdfPanel}>
           <div className={styles.pdfHeader}>
-            <HugeiconsIcon icon={Pdf01Icon} size={15} color="currentColor" strokeWidth={1.8} />
-            <span>{displayName} — Research Report</span>
+            <HugeiconsIcon icon={Pdf01Icon} size={14} color="currentColor" strokeWidth={1.8} />
+            <span className={styles.pdfHeaderTitle}>{pdfPanelTitle} — Research Report</span>
             <div className={styles.pdfHeaderActions}>
               <a href={downloadUrl ?? '#'} className={styles.pdfOpenBtn}>
                 <HugeiconsIcon icon={Download01Icon} size={13} color="currentColor" strokeWidth={1.8} />
                 Download
               </a>
               <button className={styles.pdfOpenBtn} onClick={onBack}>
-                ← Dashboard
+                <HugeiconsIcon icon={Home01Icon} size={13} color="currentColor" strokeWidth={1.8} />
+                Dashboard
               </button>
             </div>
           </div>
