@@ -20,6 +20,18 @@
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="frontend/public/company/demo1.png" alt="Scout AI Dashboard" width="100%" />
+</p>
+
+<p align="center">
+  <img src="frontend/public/company/demo2.png" alt="Scout AI Research Report" width="100%" />
+</p>
+
+---
+
 ## Why Scout AI
 
 1. **Not just a search wrapper.** A 5-node LangGraph workflow plans targeted queries, searches via Exa's neural search API, synthesizes findings with a 70B LLM, runs an automated quality check, and generates a structured PDF — all in a single run.
