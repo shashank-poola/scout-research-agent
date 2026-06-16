@@ -50,8 +50,11 @@ async def quality_check_node(state: ResearchState) -> dict:
     response = await llm.ainvoke(messages)
     data = _extract_json(response.content)
 
-    score = float(data.get("score", 0.75))
-    feedback = data.get("feedback", "Auto-approved")
+    if not data:
+        logger.warning("Quality check JSON parse failed for '%s' — defaulting to score=0.0", state["company_name"])
+
+    score = float(data.get("score", 0.0))
+    feedback = data.get("feedback", "Parse failed — requires retry")
 
     logger.info(
         "Quality check score=%.2f for '%s': %s",

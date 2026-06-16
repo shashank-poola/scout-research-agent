@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./scout.db"
     storage_dir: str = "storage/reports"
     log_level: str = "INFO"
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173"]
 
 
 settings = Settings()

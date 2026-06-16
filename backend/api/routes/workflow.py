@@ -1,13 +1,14 @@
 """Workflow execution and SSE progress streaming."""
 
+import copy
 import json
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session
-from core.database import get_session
+from core.database import engine, get_session
 from models.session import ResearchSession
 from graph.workflow import workflow
 import services.progress as progress
@@ -32,7 +33,7 @@ async def run_workflow(
         raise HTTPException(status_code=409, detail="Workflow already running")
 
     session.status = "running"
-    session.updated_at = datetime.utcnow()
+    session.updated_at = datetime.now(timezone.utc)
     db.add(session)
     db.commit()
 
@@ -96,10 +97,7 @@ def _sse(data: dict) -> str:
 
 
 async def _execute_workflow(session_id: int) -> None:
-    from core.database import engine
-    from sqlmodel import Session as DBSession
-
-    with DBSession(engine) as db:
+    with Session(engine) as db:
         session = db.get(ResearchSession, session_id)
         if not session:
             return
@@ -119,7 +117,7 @@ async def _execute_workflow(session_id: int) -> None:
             "error": None,
         }
 
-        final_state = initial_state.copy()
+        final_state = copy.deepcopy(initial_state)
         try:
             async for chunk in workflow.astream(initial_state):
                 node_name = next(iter(chunk))
@@ -159,6 +157,6 @@ async def _execute_workflow(session_id: int) -> None:
                 "message": str(exc),
             })
         finally:
-            session.updated_at = datetime.utcnow()
+            session.updated_at = datetime.now(timezone.utc)
             db.add(session)
             db.commit()

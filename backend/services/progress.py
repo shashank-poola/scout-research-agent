@@ -5,10 +5,15 @@ Uses an append-only events list + index-based streaming so any number of
 SSE consumers can connect at any time without duplicates or missed events.
 """
 
-from typing import Optional
+from typing import Optional, TypedDict
 
-# session_id → {"events": [...], "done": bool}
-_sessions: dict[int, dict] = {}
+
+class ProgressState(TypedDict):
+    events: list[dict]
+    done: bool
+
+
+_sessions: dict[int, ProgressState] = {}
 
 
 def init(session_id: int) -> None:
@@ -28,7 +33,7 @@ def finish(session_id: int, event: dict) -> None:
         s["done"] = True
 
 
-def get(session_id: int) -> Optional[dict]:
+def get(session_id: int) -> Optional[ProgressState]:
     return _sessions.get(session_id)
 
 
