@@ -27,8 +27,10 @@ async def get_report_json(session_id: int, db: Session = Depends(get_session)):
     session = db.get(ResearchSession, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+
     if session.status != "done":
         raise HTTPException(status_code=400, detail=f"Report not ready — status: {session.status}")
+
     return ReportResponse(
         session_id=session.id,
         company_name=session.company_name,
@@ -46,6 +48,7 @@ async def download_report(session_id: int, download: bool = False, db: Session =
     session = db.get(ResearchSession, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+        
     if session.status != "done" or not session.report_path:
         raise HTTPException(status_code=404, detail="Report not ready")
 

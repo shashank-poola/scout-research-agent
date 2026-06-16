@@ -35,6 +35,7 @@ async def get_session_by_id(session_id: int, db: Session = Depends(get_session))
     session = db.get(ResearchSession, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+
     return session
 
 
@@ -43,8 +44,10 @@ async def delete_session(session_id: int, db: Session = Depends(get_session)):
     session = db.get(ResearchSession, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+
     if session.report_path and os.path.exists(session.report_path):
         os.remove(session.report_path)
+        
     db.delete(session)
     db.commit()
     return {"message": "Session deleted", "session_id": session_id}

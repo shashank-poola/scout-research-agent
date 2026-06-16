@@ -25,8 +25,10 @@ async def chat(session_id: int, body: ChatRequest, db: Session = Depends(get_ses
     session = db.get(ResearchSession, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+
     if session.status != "done":
         raise HTTPException(status_code=400, detail="Research not complete yet")
+
     if not session.report_content:
         raise HTTPException(status_code=400, detail="No report content available")
 
@@ -47,6 +49,7 @@ async def chat(session_id: int, body: ChatRequest, db: Session = Depends(get_ses
             messages.append(HumanMessage(content=m.content))
         else:
             messages.append(AIMessage(content=m.content))
+            
     messages.append(HumanMessage(content=body.message))
 
     llm = get_llm()
