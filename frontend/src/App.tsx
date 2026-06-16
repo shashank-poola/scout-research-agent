@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { Session } from './lib/types';
-import { listSessions } from './routes/sessions';
+import type { Session, CreateSessionPayload } from './lib/types';
+import { listSessions, createSession } from './routes/sessions';
+import { runWorkflow } from './routes/workflow';
 import Sidebar from './components/sidebar/Sidebar';
 import Dashboard from './components/dashboard/Dashboard';
 import ResearchChat from './components/chat-interface/ResearchChat';
 import CommandPalette from './components/sidebar/CommandPalette';
+import NewResearchModal from './components/research-agent/NewResearchModal';
 import './App.css';
 
 type View = 'home' | 'chat';
@@ -17,6 +19,8 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [pendingQuery, setPendingQuery] = useState('');
   const paletteOpenRef = useRef(false);
 
   useEffect(() => { paletteOpenRef.current = commandPaletteOpen; }, [commandPaletteOpen]);
@@ -25,11 +29,26 @@ export default function App() {
     listSessions().then(setSessions).catch(() => {});
   }, [refreshKey]);
 
+  // Opens the 3-field modal pre-filled with whatever the user typed
   const handleStartResearch = useCallback((query: string) => {
-    setActiveQuery(query);
-    setActiveSession(null);
-    setSidebarCollapsed(false);
-    setView('chat');
+    setPendingQuery(query);
+    setModalOpen(true);
+  }, []);
+
+  // Called when user submits the modal form
+  const handleModalSubmit = useCallback(async (payload: CreateSessionPayload) => {
+    setModalOpen(false);
+    try {
+      const session = await createSession(payload);
+      await runWorkflow(session.id);
+      setActiveQuery(payload.company_name);
+      setActiveSession({ ...session, status: 'running' });
+      setSidebarCollapsed(false);
+      setView('chat');
+    } catch {
+      // createSession or runWorkflow failed — re-open modal so user can retry
+      setModalOpen(true);
+    }
   }, []);
 
   const handleOpenSession = useCallback((session: Session) => {
@@ -100,6 +119,14 @@ export default function App() {
           />
         )}
       </main>
+
+      {modalOpen && (
+        <NewResearchModal
+          initialQuery={pendingQuery}
+          onSubmit={handleModalSubmit}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
 
       {commandPaletteOpen && (
         <CommandPalette
